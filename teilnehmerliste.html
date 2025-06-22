@@ -2,25 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Teilnehmerliste Open 2026</title>
+  <title>Teilnehmerliste Zimmner Open 2026</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <style>
     table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 1rem;
     }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      cursor: pointer;
-      background: #f0f0f0;
-    }
-
   /* Spezifisch: Spalte 'Nr' schmal halten */
   th:nth-child(1), td:nth-child(1) {
     width: 40px;
@@ -36,19 +27,20 @@
     width: 80px;
     white-space: nowrap;
   }
+
   </style>
 </head>
 <body>
 
 <h2>Teilnehmerliste Open 2026</h2>
-<table id="teilnehmer">
+<table id="teilnehmer" class="display">
   <thead>
     <tr>
-      <th onclick="sortTable(0)">Nr.</th>
-      <th onclick="sortTable(1)">Name</th>
-      <th onclick="sortTable(2)">Verein</th>
-      <th onclick="sortTable(3)">DWZ</th>
-      <th onclick="sortTable(4)">Spielberechtigt</th>
+      <th>Nr.</th>
+      <th>Name</th>
+      <th>Verein</th>
+      <th>DWZ</th>
+      <th>Spielberechtigt</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -61,75 +53,43 @@ fetch(sheetUrl)
   .then(response => response.text())
   .then(csv => {
     const data = Papa.parse(csv, { header: true }).data;
-    const tbody = document.querySelector("#teilnehmer tbody");
 
+    // Filter nur auf gültige Zeilen mit Nachname + Vorname
     const teilnehmer = data.filter(r => r["Nachname"] && r["Vorname"]);
 
-    teilnehmer.sort((a, b) => {
-      return parseInt(b["DWZ"]) - parseInt(a["DWZ"]);
-    });
+    // DWZ sortieren (absteigend)
+    teilnehmer.sort((a, b) => parseInt(b["DWZ"] || 0) - parseInt(a["DWZ"] || 0));
 
-    teilnehmer.forEach((row, index) => {
-      const tr = document.createElement("tr");
-
+    const rows = teilnehmer.map((row, index) => {
       const name = `${row["Nachname"]}, ${row["Vorname"]}`;
       const verein = row["Schachverein"] || "";
       const dwz = row["DWZ"] || "";
-      const sb = row["spielberechtigt"]?.toLowerCase() === "ja" ? "ja" : "";
+      const sb = (row["spielberechtigt"] || "").toLowerCase() === "ja" ? "ja" : "";
+      return [index + 1, name, verein, dwz, sb];
+    });
 
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${name}</td>
-        <td>${verein}</td>
-        <td>${dwz}</td>
-        <td>${sb}</td>
-      `;
-
-      tbody.appendChild(tr);
+    // DataTables initialisieren
+    $(document).ready(function () {
+      $('#teilnehmer').DataTable({
+        data: rows,
+        order: [[3, "desc"]], // Sortiere standardmäßig nach DWZ absteigend
+        columns: [
+          { title: "Nr." },
+          { title: "Name" },
+          { title: "Verein" },
+          { title: "DWZ", type: "num" },
+          { title: "Spielberechtigt" }
+        ],
+        paging: false,
+        language: {
+          search: "Suche:",
+          zeroRecords: "Keine Einträge gefunden",
+          info: "_TOTAL_ Teilnehmer",
+          infoEmpty: "Keine Teilnehmer vorhanden"
+        }
+      });
     });
   });
-
-// Sortierfunktion (einfacher Tabellen-Sortiercode)
-function sortTable(n) {
-  const table = document.getElementById("teilnehmer");
-  let switching = true;
-  let dir = "desc";
-  let switchcount = 0;
-
-  while (switching) {
-    switching = false;
-    let rows = table.rows;
-    for (let i = 1; i < rows.length - 1; i++) {
-      let shouldSwitch = false;
-      const x = rows[i].getElementsByTagName("TD")[n];
-      const y = rows[i + 1].getElementsByTagName("TD")[n];
-
-      let xVal = x.innerText.toLowerCase();
-      let yVal = y.innerText.toLowerCase();
-
-      if (!isNaN(parseFloat(xVal)) && !isNaN(parseFloat(yVal))) {
-        xVal = parseFloat(xVal);
-        yVal = parseFloat(yVal);
-      }
-
-      if ((dir === "asc" && xVal > yVal) || (dir === "desc" && xVal < yVal)) {
-        shouldSwitch = true;
-        break;
-      }
-    }
-
-    if (shouldSwitch) {
-      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-      switching = true;
-      switchcount++;
-    } else {
-      if (switchcount === 0 && dir === "desc") {
-        dir = "asc";
-        switching = true;
-      }
-    }
-  }
-}
 </script>
 
 </body>
