@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Open 2026 – Anmeldung</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    label { display: block; margin-top: 12px; }
+    input[type="text"], input[type="email"], input[type="number"] {
+      width: 100%; padding: 8px; margin-top: 4px;
+    }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Anmeldung – Open 2026</h2>
+  <form id="anmeldeForm">
+    <label>Nachname* <input type="text" name="nachname" required></label>
+    <label>Vorname* <input type="text" name="vorname" required></label>
+    <label>Geburtsjahr* <input type="number" name="geburtsjahr" required></label>
+    <label>E-Mail-Adresse* <input type="email" name="email" required></label>
+    <label>Schachverein <input type="text" name="schachverein"></label>
+    <label>DWZ <input type="number" name="dwz" min="0" max="2999"></label>
+    <label>Wie viele Felder hat ein Schachbrett?* 
+      <input type="text" id="captcha" required>
+    </label>
+    <label>
+      <input type="checkbox" id="datenschutz"> Ich stimme der Verarbeitung meiner Daten im Rahmen der Turnierorganisation zu.*
+    </label>
+
+    <button type="submit" id="submitBtn" disabled>Anmelden</button>
+  </form>
+
+  <p id="status" style="margin-top:20px; color:green;"></p>
+
+  <script>
+    const form = document.getElementById('anmeldeForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const captcha = document.getElementById('captcha');
+    const datenschutz = document.getElementById('datenschutz');
+
+    function checkValidity() {
+      const requiredFields = form.querySelectorAll('input[required]');
+      const allFilled = Array.from(requiredFields).every(input => input.value.trim() !== '');
+      const captchaOK = captcha.value.trim() === '64';
+      const consentGiven = datenschutz.checked;
+
+      submitBtn.disabled = !(allFilled && captchaOK && consentGiven);
+    }
+
+    form.addEventListener('input', checkValidity);
+    datenschutz.addEventListener('change', checkValidity);
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      fetch("https://script.google.com/macros/s/AKfycbw14k_JgowHaavOyZfFVVW3VWJUisXkaAVqtPazpyrr5wdt41muzECuolt0Q6GtVi8Q/exec", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(text => {
+        document.getElementById('status').textContent = text;
+        form.reset();
+        submitBtn.disabled = true;
+      })
+      .catch(err => {
+        document.getElementById('status').textContent = "Fehler: " + err;
+      });
+    });
+  </script>
+</body>
+</html>
