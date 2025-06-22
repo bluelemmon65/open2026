@@ -46,7 +46,7 @@
       const requiredFields = form.querySelectorAll('input[required]');
       const allFilled = Array.from(requiredFields).every(input => input.value.trim() !== '');
       const captchaOK = captcha.value.trim() === '64';
-      const consentGiven = datenschutz.checked;
+      const consentGiven = datenschutz.checked && datenverwendung.checked;
 
       submitBtn.disabled = !(allFilled && captchaOK && consentGiven);
     }
